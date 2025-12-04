@@ -41,42 +41,61 @@ Done! Your app just updated itself.
 ### 2. Example Usage (Recommended)
 
 ```csharp
+using System;
+using System.Collections;
+using System.IO;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 using Updater;
 
-public class AutoUpdater : MonoBehaviour
+public class NewMonoBehaviourScript : MonoBehaviour
 {
-    [SerializeField] private string apkUrl = "https://yourserver.com/myapp-v2.0.0.apk";
-    [SerializeField] private Image progressBar;
-
     private UpdaterBridge updater;
 
-    private void Awake()
+    public string url = "";
+    public Image im;
+
+    public Action<float> OnProgressChanged;
+    public Action<string> OnDownloadFailed;
+    public Action<string> OnDownloadCompleted;
+
+    public void Load()
     {
-        updater = new UpdaterBridge();
+        StartCoroutine(DownloadCoroutine(url));
     }
 
-    public void StartUpdate()
+    private void OnLoad(float amount)
     {
-        // Add downloader component (or reuse an existing one)
-        var downloader = gameObject.AddComponent<NewMonoBehaviourScript>();
-        downloader.url = apkUrl;
-        downloader.im = progressBar;
-
-        downloader.OnProgressChanged += progress => progressBar.fillAmount = progress;
-        downloader.OnDownloadCompleted += OnApkDownloaded;
-        downloader.OnDownloadFailed += error => Debug.LogError("Download failed: " + error);
-
-        downloader.Load();
+        im.fillAmount = amount;
     }
 
-    private void OnApkDownloaded(string apkPath)
-    {
-        Debug.Log($"APK ready: {apkPath}");
+    private IEnumerator DownloadCoroutine(string url) 
+    { 
+        string filePath = Path.Combine(Application.persistentDataPath, "downloaded_app.apk"); 
+        using (UnityWebRequest request = UnityWebRequest.Get(url)) 
+        { 
+            request.downloadHandler = new DownloadHandlerFile(filePath); 
+            request.SendWebRequest(); 
+            while (!request.isDone) 
+            {
+                OnProgressChanged?.Invoke(request.downloadProgress); 
+                yield return null; 
+            } 
 
-        // Try to install (will request permission automatically if needed)
-        updater.InstallApk(apkPath);
+            if (request.result != UnityWebRequest.Result.Success) 
+            { 
+                Debug.LogError($"Download failed: {request.error}");
+                OnDownloadFailed?.Invoke(request.error);
+                yield break; 
+            }
+
+            OnProgressChanged?.Invoke(1f);
+
+            OnDownloadCompleted?.Invoke(filePath); 
+
+            Debug.Log($"Download finished: {filePath}");
+        } 
     }
 }
 ```

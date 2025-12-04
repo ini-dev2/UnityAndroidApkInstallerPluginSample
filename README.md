@@ -186,4 +186,8 @@ Made with love for the Unity community by ini-dev2
 ## Author
 ini-dev2 - [GitHub Profile](https://github.com/ini-dev2)
 Made with ❤️ for the Unity community
+
+## Readme
+ReadMe was created using neural networks, there may be inaccuracies.
+
 December 2025
